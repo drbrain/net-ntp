@@ -1,7 +1,13 @@
 require "minitest/autorun"
 require "net/ntp"
 
-class Net::NTP::NTPTest < Minitest::Test
+class TestNetNTP < Minitest::Test
+
+  def setup
+    @pool = "pool.ntp.org"
+    @ntp  = Net::NTP.new @pool
+  end
+
   def test_response_methods
     result = Net::NTP.get("de.pool.ntp.org")
 
