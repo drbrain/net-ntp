@@ -4,7 +4,10 @@ require 'timeout'
 module Net; end # :nodoc:
 
 class Net::NTP
-  TIME_T_OFFSET = 2208988800 # :nodoc:
+  ##
+  # Offset from NTP Epoch to TIME_T epoch
+
+  TIME_T_OFFSET = 2_208_988_800 # :nodoc:
 
   TIMEOUT = 60         #:nodoc:
 
