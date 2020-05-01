@@ -9,7 +9,7 @@ class TestNetNTP < Minitest::Test
   end
 
   def test_response_methods
-    result = Net::NTP.get("de.pool.ntp.org")
+    result = @ntp.get
 
     assert result.leap_indicator
     assert result.leap_indicator_text
@@ -33,12 +33,12 @@ class TestNetNTP < Minitest::Test
   end
 
   def test_offset
-    pool = "de.pool.ntp.org"
-    ntpdate_output = `ntpdate -p1 -q #{pool} 2>/dev/null`
+    ntpdate_output = `ntpdate -p1 -q #{@pool} 2>/dev/null`
     skip "ntpdate not available - cannot run this test right now" unless $?.success?
+
     if m = ntpdate_output.match(/offset (-?\d+\.\d+) sec/)
       expected = Float m[1]
-      result = Net::NTP.get pool
+      result = @ntp.get
 
       # If I am in sync:
       # expected -0.042687 but got 0.04379832744598389

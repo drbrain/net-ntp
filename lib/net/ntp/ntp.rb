@@ -2,7 +2,7 @@ require 'socket'
 require 'timeout'
 
 module Net #:nodoc:
-  module NTP
+  class NTP
     TIMEOUT = 60         #:nodoc:
     NTP_ADJ = 2208988800 #:nodoc:
     NTP_FIELDS = [ :byte1, :stratum, :poll, :precision, :delay, :delay_fb,
@@ -60,35 +60,51 @@ module Net #:nodoc:
       3 => 'alarm condition (clock not synchronized)'
     }
 
+    attr_reader :host
+    attr_reader :port
+    attr_accessor :timeout
+
     ###
     # Sends an NTP datagram to the specified NTP server and returns
     # a hash based upon RFC1305 and RFC2030.
-    def self.get(host="pool.ntp.org", port="ntp", timeout=TIMEOUT)
-      sock = UDPSocket.new
-      sock.connect(host, port)
+    def self.get(host, port: "ntp", timeout: TIMEOUT)
+      ntp = new host, port: port, timeout: timeout
 
+      ntp.get
+    end
+
+    def initialize(host, port: "ntp", timeout: TIMEOUT)
+      @host = host
+      @port = port
+      @timeout = timeout
+
+      @sock = UDPSocket.new
+      @sock.connect @host, @port
+    end
+
+    def get
       client_localtime      = Time.now.to_f
       client_adj_localtime  = client_localtime + NTP_ADJ
       client_frac_localtime = frac2bin(client_adj_localtime)
 
       ntp_msg = (['00011011']+Array.new(12, 0)+[client_localtime, client_frac_localtime.to_s]).pack("B8 C3 N10 B32")
 
-      sock.print ntp_msg
-      sock.flush
+      @sock.print ntp_msg
+      @sock.flush
 
-      read, write, error = IO.select [sock], nil, nil, timeout
+      read, write, error = IO.select [@sock], nil, nil, timeout
       if read.nil?
         # For backwards compatibility we throw a Timeout error, even
         # though the timeout is being controlled by select()
         raise Timeout::Error
       else
         client_time_receive = Time.now.to_f
-        data, _ = sock.recvfrom(960)
+        data, _ = @sock.recvfrom(960)
         Response.new(data, client_time_receive)
       end
     end
 
-    def self.frac2bin(frac) #:nodoc:
+    def frac2bin(frac) #:nodoc:
       bin  = ''
 
       while bin.length < 32
@@ -98,7 +114,7 @@ module Net #:nodoc:
 
       bin
     end
-    private_class_method :frac2bin
+    private :frac2bin
 
     class Response
 
