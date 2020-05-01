@@ -55,7 +55,7 @@ class Net::NTP
 
     client_time_receive = Time.now.to_f
     data, _ = socket.recvfrom 960
-    Net::NTP::Response.new data, client_time_receive
+    Net::NTP::Packet.response data, client_time_receive
   end
 
   private
@@ -81,5 +81,5 @@ class Net::NTP
   end
 end
 
-require "net/ntp/response"
+require "net/ntp/packet"
 require "net/ntp/version"

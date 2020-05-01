@@ -1,4 +1,4 @@
-class Net::NTP::Response
+class Net::NTP::Packet
   FIELDS = %i[
     byte1
     stratum
@@ -58,11 +58,20 @@ class Net::NTP::Response
     STRATUM[i] = 'reserved'
   end
 
-  attr_reader :client_time_receive
+  attr_accessor :client_time_received
+  attr_accessor :data
 
-  def initialize(raw_data, client_time_receive)
-    @raw_data             = raw_data
-    @client_time_receive  = client_time_receive
+  def self.response(data, client_time_received)
+    packet = new
+    packet.data = data
+    packet.packet_data_by_field
+    packet.client_time_received = client_time_received
+    packet
+  end
+
+  def initialize
+    @client_time_received  = nil
+    @data                 = nil
     @packet_data_by_field = nil
   end
 
@@ -140,17 +149,15 @@ class Net::NTP::Response
 
   # As described in http://tools.ietf.org/html/rfc958
   def offset
-    @offset ||= (receive_timestamp - originate_timestamp + transmit_timestamp - client_time_receive) / 2.0
+    @offset ||= (receive_timestamp - originate_timestamp + transmit_timestamp - client_time_received) / 2.0
   end
-
-  protected
 
   def packet_data_by_field #:nodoc:
     if !@packet_data_by_field
-      @packetdata = @raw_data.unpack("a C3   n B16 n B16 H8   N B32 N B32   N B32 N B32")
+      packetdata = @data.unpack("a C3   n B16 n B16 H8   N B32 N B32   N B32 N B32")
       @packet_data_by_field = {}
       FIELDS.each do |field|
-        @packet_data_by_field[field] = @packetdata.shift
+        @packet_data_by_field[field] = packetdata.shift
       end
     end
 
