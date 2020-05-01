@@ -11,43 +11,27 @@ class TestNetNTP < Minitest::Test
   def test_response_methods
     result = @ntp.get
 
-    assert result.leap_indicator
-    assert result.leap_indicator_text
-    assert result.version_number
-    assert result.mode
-    assert result.mode_text
-    assert result.stratum
-    assert result.stratum_text
-    assert result.poll_interval
-    assert result.precision
-    assert result.root_delay
-    assert result.root_dispersion
-    assert result.reference_clock_identifier
-    assert result.reference_clock_identifier_text.nil?
-    assert result.reference_timestamp > 1179864677
-    assert result.originate_timestamp > 1179864677
-    assert result.receive_timestamp > 1179864677
-    assert result.transmit_timestamp > 1179864677
-    assert result.time.is_a?(Time)
-    assert result.client_time_receive > 1179864677
-  end
+    assert_includes Net::NTP::LEAP_INDICATOR.keys, result.leap_indicator
+    assert_includes Net::NTP::LEAP_INDICATOR.values, result.leap_indicator_text
+    assert_equal 3, result.version_number
+    assert_equal 4, result.mode
+    assert_equal "server", result.mode_text
+    assert_includes (0..15), result.stratum
+    assert_equal Net::NTP::STRATUM[result.stratum], result.stratum_text
+    assert_equal 3, result.poll_interval
+    assert_equal -18, result.precision
+    assert_in_delta result.root_delay, 0, 0.1
+    assert_in_delta result.root_dispersion, 0, 0.1
+    assert_kind_of String, result.reference_clock_identifier
 
-  def test_offset
-    ntpdate_output = `ntpdate -p1 -q #{@pool} 2>/dev/null`
-    skip "ntpdate not available - cannot run this test right now" unless $?.success?
+    assert_nil result.reference_clock_identifier_text
 
-    if m = ntpdate_output.match(/offset (-?\d+\.\d+) sec/)
-      expected = Float m[1]
-      result = @ntp.get
+    assert_operator result.reference_timestamp, :>, 1179864677
+    assert_operator result.originate_timestamp, :>, 1179864677
+    assert_operator result.receive_timestamp,   :>, 1179864677
+    assert_operator result.transmit_timestamp,  :>, 1179864677
+    assert_operator result.client_time_receive, :>, 1179864677
 
-      # If I am in sync:
-      # expected -0.042687 but got 0.04379832744598389
-      # assert result.offset == expected, "expected #{expected} but got #{result.offset}"
-
-      # FIXME: Find a good way to test this is "OK", whatever that
-      # means
-    else
-      skip "ntpdate not parseable - cannot run this test right now"
-    end
+    assert_kind_of Time, result.time
   end
 end
