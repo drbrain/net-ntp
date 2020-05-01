@@ -1,6 +1,7 @@
-require "test_helper"
+require "minitest/autorun"
+require "net/ntp"
 
-class Net::NTP::NTPTest < Test::Unit::TestCase
+class Net::NTP::NTPTest < Minitest::Test
   def test_response_methods
     result = Net::NTP.get("de.pool.ntp.org")
 

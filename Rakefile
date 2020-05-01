@@ -1,17 +1,16 @@
-require 'rubygems'
 require 'rake'
 require 'rake/testtask'
+require 'rdoc/task'
 
-Rake::TestTask.new(:test) do |test|
-  test.libs << 'lib' << 'test'
-  test.pattern = 'test/**/*_test.rb'
-  test.verbose = true
-end
+require_relative "lib/net/ntp/version"
 
 task :default => :test
 
-require 'rdoc/task'
-require 'net/ntp/version'
+Rake::TestTask.new(:test) do |test|
+  test.libs << 'lib'
+  test.pattern = 'test/**/*_test.rb'
+  test.verbose = true
+end
 
 Rake::RDocTask.new do |rdoc|
   rdoc.rdoc_dir = 'rdoc'
