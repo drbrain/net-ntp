@@ -1,22 +1,22 @@
 class Net::NTP::Packet
   FIELDS = %i[
-    byte1
-    stratum
-    poll
-    precision
-    delay
-    delay_fb
-    disp
-    disp_fb
-    ident
-    ref_time
-    ref_time_fb
-    org_time
-    org_time_fb
-    recv_time
-    recv_time_fb
-    trans_time
-    trans_time_fb
+    @leap_version_mode
+    @stratum
+    @poll_interval
+    @precision
+    @delay
+    @delay_fb
+    @root_dispersion
+    @disp_fb
+    @ident
+    @ref_time
+    @ref_time_fb
+    @org_time
+    @org_time_fb
+    @recv_time
+    @recv_time_fb
+    @trans_time
+    @trans_time_fb
   ]
 
   LEAP_INDICATOR = {
@@ -59,36 +59,32 @@ class Net::NTP::Packet
   end
 
   attr_accessor :client_time_received
-  attr_accessor :data
 
   def self.response(data, client_time_received)
     packet = new
-    packet.data = data
-    packet.packet_data_by_field
+    packet.unpack data
     packet.client_time_received = client_time_received
     packet
   end
 
   def initialize
-    @client_time_received  = nil
-    @data                 = nil
-    @packet_data_by_field = nil
+    @client_time_received = nil
   end
 
   def leap_indicator
-    @leap_indicator ||= (packet_data_by_field[:byte1].bytes.first & 0xC0) >> 6
+    @leap_indicator
   end
 
   def leap_indicator_text
-    @leap_indicator_text ||= LEAP_INDICATOR[leap_indicator]
+    @leap_indicator_text ||= LEAP_INDICATOR[@leap_indicator]
   end
 
   def version_number
-    @version_number ||= (packet_data_by_field[:byte1].bytes.first & 0x38) >> 3
+    @version_number
   end
 
   def mode
-    @mode ||= (packet_data_by_field[:byte1].bytes.first & 0x07)
+    @mode
   end
 
   def mode_text
@@ -96,7 +92,7 @@ class Net::NTP::Packet
   end
 
   def stratum
-    @stratum ||= packet_data_by_field[:stratum]
+    @stratum
   end
 
   def stratum_text
@@ -104,23 +100,23 @@ class Net::NTP::Packet
   end
 
   def poll_interval
-    @poll_interval ||= packet_data_by_field[:poll]
+    @poll_interval
   end
 
   def precision
-    @precision ||= packet_data_by_field[:precision] - 255
+    @_precision ||= @precision - 255
   end
 
   def root_delay
-    @root_delay ||= bin2frac(packet_data_by_field[:delay_fb])
+    @root_delay ||= bin2frac(@delay_fb)
   end
 
   def root_dispersion
-    @root_dispersion ||= packet_data_by_field[:disp]
+    @root_dispersion
   end
 
   def reference_clock_identifier
-    @reference_clock_identifier ||= unpack_ip(packet_data_by_field[:stratum], packet_data_by_field[:ident])
+    @reference_clock_identifier ||= unpack_ip(@stratum, @ident)
   end
 
   def reference_clock_identifier_text
@@ -128,19 +124,19 @@ class Net::NTP::Packet
   end
 
   def reference_timestamp
-    @reference_timestamp ||= ((packet_data_by_field[:ref_time] + bin2frac(packet_data_by_field[:ref_time_fb])) - Net::NTP::TIME_T_OFFSET)
+    @reference_timestamp ||= ((@ref_time + bin2frac(@ref_time_fb)) - Net::NTP::TIME_T_OFFSET)
   end
 
   def originate_timestamp
-    @originate_timestamp ||= (packet_data_by_field[:org_time] + bin2frac(packet_data_by_field[:org_time_fb]))
+    @originate_timestamp ||= (@org_time + bin2frac(@org_time_fb))
   end
 
   def receive_timestamp
-    @receive_timestamp ||= ((packet_data_by_field[:recv_time] + bin2frac(packet_data_by_field[:recv_time_fb])) - Net::NTP::TIME_T_OFFSET)
+    @receive_timestamp ||= ((@recv_time + bin2frac(@recv_time_fb)) - Net::NTP::TIME_T_OFFSET)
   end
 
   def transmit_timestamp
-    @transmit_timestamp ||= ((packet_data_by_field[:trans_time] + bin2frac(packet_data_by_field[:trans_time_fb])) - Net::NTP::TIME_T_OFFSET)
+    @transmit_timestamp ||= ((@trans_time + bin2frac(@trans_time_fb)) - Net::NTP::TIME_T_OFFSET)
   end
 
   def time
@@ -152,16 +148,16 @@ class Net::NTP::Packet
     @offset ||= (receive_timestamp - originate_timestamp + transmit_timestamp - client_time_received) / 2.0
   end
 
-  def packet_data_by_field #:nodoc:
-    if !@packet_data_by_field
-      packetdata = @data.unpack("a C3   n B16 n B16 H8   N B32 N B32   N B32 N B32")
-      @packet_data_by_field = {}
-      FIELDS.each do |field|
-        @packet_data_by_field[field] = packetdata.shift
-      end
+  def unpack(data) #:nodoc:
+    fields = data.unpack "C C3 n B16 n B16 H8 N B32 N B32 N B32 N B32"
+
+    FIELDS.each do |field|
+      instance_variable_set field, fields.shift
     end
 
-    @packet_data_by_field
+    @leap_indicator = (@leap_version_mode & 0xC0) >> 6
+    @version_number = (@leap_version_mode & 0x38) >> 3
+    @mode           = (@leap_version_mode & 0x07)
   end
 
   def bin2frac(bin) #:nodoc:
