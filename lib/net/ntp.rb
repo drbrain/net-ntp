@@ -78,9 +78,6 @@ class Net::NTP
     @host = host
     @port = port
     @timeout = timeout
-
-    @sock = UDPSocket.new
-    @sock.connect @host, @port
   end
 
   def get
@@ -90,20 +87,20 @@ class Net::NTP
 
     ntp_msg = (['00011011']+Array.new(12, 0)+[client_localtime, client_frac_localtime.to_s]).pack("B8 C3 N10 B32")
 
-    @sock.print ntp_msg
-    @sock.flush
+    socket.write ntp_msg
 
-    read, write, error = IO.select [@sock], nil, nil, timeout
-    if read.nil?
-      # For backwards compatibility we throw a Timeout error, even
-      # though the timeout is being controlled by select()
-      raise Timeout::Error
-    else
-      client_time_receive = Time.now.to_f
-      data, _ = @sock.recvfrom(960)
-      Response.new(data, client_time_receive)
-    end
+    read, = IO.select [socket], nil, nil, timeout
+
+    # For backwards compatibility we throw a Timeout error, even
+    # though the timeout is being controlled by select()
+    raise Timeout::Error if read.nil?
+
+    client_time_receive = Time.now.to_f
+    data, _ = socket.recvfrom 960
+    Response.new data, client_time_receive
   end
+
+  private
 
   def frac2bin(frac) #:nodoc:
     bin  = ''
@@ -115,7 +112,15 @@ class Net::NTP
 
     bin
   end
-  private :frac2bin
+
+  def socket
+    @socket ||=
+      begin
+        s = UDPSocket.new
+        s.connect @host, @port
+        s
+      end
+  end
 
   class Response
 
