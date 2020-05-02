@@ -1,10 +1,22 @@
-require 'socket'
-require 'timeout'
+require "socket"
 
 module Net; end # :nodoc:
 
+##
+# Partial implementation of the NTP protocol
+#
+# See RFC5905 for details of NTP
+
 class Net::NTP
-  TIMEOUT = 60 #:nodoc:
+  ##
+  # Default timeout when waiting for responses to packets
+
+  TIMEOUT = 60
+
+  ##
+  # The current version of Net::NTP
+
+  VERSION = "3.0.0"
 
   ##
   # NTP host to connect to
@@ -100,4 +112,3 @@ end
 
 require "net/ntp/error"
 require "net/ntp/packet"
-require "net/ntp/version"
