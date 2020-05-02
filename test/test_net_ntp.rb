@@ -72,4 +72,20 @@ class TestNetNTP < Minitest::Test
 
     assert_equal expected, socket.write_values.first
   end
+
+  def test_write
+    message = "dummy message"
+
+    response = "\x1C\x03\x03\xE8\x00\x00\x03\xB6\x00\x00\x04\xC7\x9F\xCBRf\xE2V.\xB0\"D\xF4\x8A^\xAB\xB0\xA3\xEF\x8Dz\xC4\xE2V/#&\xF2\xA9g\xE2V/#&\xF4Ci"
+
+    socket = FakeUDPSocket.new
+    socket.add_read_value response
+
+    result = @ntp.stub :socket, socket do
+      @ntp.write message
+    end
+
+    expected = Time.at 1588310179.1521401
+    assert_equal expected, result.time
+  end
 end

@@ -46,9 +46,19 @@ class Net::NTP
     client_adj_localtime  = client_localtime + TIME_T_OFFSET
     client_frac_localtime = frac2bin(client_adj_localtime)
 
-    get_msg = (['00011011']+Array.new(12, 0)+[client_localtime, client_frac_localtime]).pack("B8 C3 N10 B32")
+    get_message = (['00011011']+Array.new(12, 0)+[client_localtime, client_frac_localtime]).pack("B8 C3 N10 B32")
 
-    socket.write get_msg
+    write get_message
+  end
+
+  ##
+  # Write +message+ to the server and return the response Packet.
+  #
+  # If the server does not respond within the timeout a Timeout::Error is
+  # raised.
+
+  def write message # :nodoc:
+    socket.write message
 
     read, = IO.select [socket], nil, nil, timeout
 
@@ -57,7 +67,9 @@ class Net::NTP
     raise Timeout::Error if read.nil?
 
     client_time_receive = Time.now.to_f
+
     data, _ = socket.recvfrom 960
+
     Net::NTP::Packet.response data, client_time_receive
   end
 
