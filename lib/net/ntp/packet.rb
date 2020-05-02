@@ -76,7 +76,7 @@ class Net::NTP::Packet
   attr_reader :reference_time
   attr_reader :origin_time
   attr_reader :receive_time
-  attr_reader :transmit_time
+  attr_accessor :transmit_time
 
   def self.response(data, client_time_received)
     packet = new
@@ -87,6 +87,21 @@ class Net::NTP::Packet
 
   def initialize
     @client_time_received = nil
+
+    @stratum          = 0
+    @poll_interval    = 0
+    @precision        = 0
+    @root_delay       = 0
+    @root_dispersion  = 0
+    @reference_id     = ""
+    @reference_time   = nil
+    @origin_time      = nil
+    @receive_time     = nil
+    @transmit_time    = nil
+
+    @leap_indicator = 0
+    @version        = 0
+    @mode           = 0
   end
 
   def leap_indicator_text
@@ -132,6 +147,8 @@ class Net::NTP::Packet
   # Convert a Time +time+ to an NTP Timestamp represented as an Integer
 
   def time_to_ntp_timestamp time
+    return 0 unless time
+
     seconds  = (time.tv_sec + TIME_T_OFFSET) << 32
     fraction = (time.tv_nsec / 1e9 * 0x100000000).to_i
 
@@ -143,24 +160,47 @@ class Net::NTP::Packet
     @offset ||= (receive_timestamp - originate_timestamp + transmit_timestamp - client_time_received) / 2.0
   end
 
+  def pack # :nodoc:
+    leap_version_mode = 0
+    leap_version_mode += (@leap_indicator & 0b11) << 6
+    leap_version_mode += (@version & 0b111) << 3
+    leap_version_mode += (@mode & 0b111)
+
+    [
+      leap_version_mode,
+      @stratum,
+      @poll_interval,
+      @precision,
+      @root_delay,
+      @root_dispersion,
+      @reference_id,
+      time_to_ntp_timestamp(@reference_time),
+      time_to_ntp_timestamp(@origin_time),
+      time_to_ntp_timestamp(@receive_time),
+      time_to_ntp_timestamp(@transmit_time),
+    ].pack "CCCcNNa4Q>Q>Q>Q>"
+  end
+
+  alias to_s pack
+
   def unpack data #:nodoc:
     fields = data.unpack "CCCcNNA4Q>Q>Q>Q>"
 
-    @leap_version_mode = fields.shift
-    @stratum           = fields.shift
-    @poll_interval     = fields.shift
-    @precision         = fields.shift
-    @root_delay        = ntp_short_to_f fields.shift
-    @root_dispersion   = ntp_short_to_f fields.shift
-    @reference_id      = unpack_ip @stratum, fields.shift
-    @reference_time    = ntp_timestamp_to_time fields.shift
-    @origin_time       = ntp_timestamp_to_time fields.shift
-    @receive_time      = ntp_timestamp_to_time fields.shift
-    @transmit_time     = ntp_timestamp_to_time fields.shift
+    leap_version_mode = fields.shift
+    @stratum          = fields.shift
+    @poll_interval    = fields.shift
+    @precision        = fields.shift
+    @root_delay       = ntp_short_to_f fields.shift
+    @root_dispersion  = ntp_short_to_f fields.shift
+    @reference_id     = unpack_ip @stratum, fields.shift
+    @reference_time   = ntp_timestamp_to_time fields.shift
+    @origin_time      = ntp_timestamp_to_time fields.shift
+    @receive_time     = ntp_timestamp_to_time fields.shift
+    @transmit_time    = ntp_timestamp_to_time fields.shift
 
-    @leap_indicator = (@leap_version_mode & 0xC0) >> 6
-    @version        = (@leap_version_mode & 0x38) >> 3
-    @mode           = (@leap_version_mode & 0x07)
+    @leap_indicator = (leap_version_mode & 0xC0) >> 6
+    @version        = (leap_version_mode & 0x38) >> 3
+    @mode           = (leap_version_mode & 0x07)
 
     nil
   end

@@ -4,11 +4,6 @@ require 'timeout'
 module Net; end # :nodoc:
 
 class Net::NTP
-  ##
-  # Offset from NTP Epoch to TIME_T epoch
-
-  TIME_T_OFFSET = 2_208_988_800 # :nodoc:
-
   TIMEOUT = 60 #:nodoc:
 
   MODE = {
@@ -42,28 +37,28 @@ class Net::NTP
   end
 
   def get
-    client_localtime      = Time.now.to_f
-    client_adj_localtime  = client_localtime + TIME_T_OFFSET
-    client_frac_localtime = frac2bin(client_adj_localtime)
+    packet = Net::NTP::Packet.new
+    packet.leap_indicator = 3
+    packet.version        = 4
+    packet.mode           = 3
+    packet.transmit_time  = Time.now
 
-    get_message = (['00011011']+Array.new(12, 0)+[client_localtime, client_frac_localtime]).pack("B8 C3 N10 B32")
-
-    write get_message
+    write packet
   end
 
   ##
-  # Write +message+ to the server and return the response Packet.
+  # Write +packet+ to the server and return the response Packet.
   #
   # If the server does not respond within the timeout a Timeout::Error is
   # raised.
 
-  def write message # :nodoc:
-    socket.write message
+  def write packet # :nodoc:
+    socket.write packet
 
     read, = IO.select [socket], nil, nil, @timeout
 
     if read.nil? then
-      timeout = Net::NTP::Timeout.new @host, @port, message, @timeout
+      timeout = Net::NTP::Timeout.new @host, @port, packet, @timeout
       raise timeout
     end
 
