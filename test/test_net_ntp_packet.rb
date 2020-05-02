@@ -3,38 +3,74 @@ require "net/ntp"
 
 class TestNetNTPPacket < Minitest::Test
   def setup
-    @data = "\x1C\x03\x03\xE8\x00\x00\x03\xB6\x00\x00\x04\xC7\x9F\xCBRf\xE2V.\xB0\"D\xF4\x8A^\xAB\xB0\xA3\xEF\x8Dz\xC4\xE2V/#&\xF2\xA9g\xE2V/#&\xF4Ci"
-
     @time = Time.at 1588310179.1521401
 
-    @resp = Net::NTP::Packet.response @data, @time.to_f
+    @packet = Net::NTP::Packet.new
   end
 
   def test_all
+    @data = "$\x01\b\xEC\x00\x00\x00\x00\x00\x00\x00-SHM\x00\xE2W\x837\xD7y\x86\xC2\xE2W\x83?~?V\xFF\xE2W\x83?\x83\x83w\xD1\xE2W\x83?\x83\x840S"
+
+    @resp = Net::NTP::Packet.response @data, @time.to_f
+
     assert_equal 0, @resp.leap_indicator
     assert_equal Net::NTP::Packet::LEAP_INDICATOR[0], @resp.leap_indicator_text
-    assert_equal 3, @resp.version_number
+    assert_equal 4, @resp.version
     assert_equal 4, @resp.mode
     assert_equal "server", @resp.mode_text
-    assert_equal 3, @resp.stratum
-    assert_equal Net::NTP::Packet::STRATUM[3], @resp.stratum_text
-    assert_equal 3, @resp.poll_interval
-    assert_equal(-23, @resp.precision)
-    assert_in_epsilon 0.0144958, @resp.root_delay
-    assert_equal 0, @resp.root_dispersion
-    assert_equal "159.203.82.102", @resp.reference_clock_identifier
+    assert_equal 1, @resp.stratum
+    assert_equal Net::NTP::Packet::STRATUM[1], @resp.stratum_text
+    assert_equal 8, @resp.poll_interval
+    assert_equal(-20, @resp.precision)
+    assert_in_epsilon 0, @resp.root_delay
+    assert_in_epsilon 0.000686, @resp.root_dispersion
+    assert_equal "SHM", @resp.reference_id
 
-    assert_nil @resp.reference_clock_identifier_text
+    assert_nil @resp.reference_id_description
 
-    expected = 1588310064.1338649
-    assert_in_epsilon expected, @resp.reference_timestamp
-    assert_in_epsilon expected, @resp.originate_timestamp
-    assert_in_epsilon expected, @resp.receive_timestamp
-    assert_in_epsilon expected, @resp.transmit_timestamp
-    assert_in_epsilon expected, @resp.client_time_received
+    expected_reference_time = Time.at 1588397239.841698
+    assert_in_epsilon expected_reference_time.to_f, @resp.reference_time.to_f
 
-    expected = Time.at 1588310179.1521401
-    assert_equal expected, @resp.time
+    expected_origin_time = Time.at 1588397247.493153
+    assert_in_epsilon expected_origin_time.to_f, @resp.origin_time.to_f
+
+    expected_receive_time = Time.at 1588397247.5137239
+    assert_in_epsilon expected_receive_time.to_f, @resp.receive_time.to_f
+
+    expected_transmit_time = Time.at 1588397247.5137348
+    assert_in_epsilon expected_transmit_time.to_f, @resp.transmit_time.to_f
+
+    assert_equal @time.to_f, @resp.client_time_received
+
+    assert_in_epsilon expected_receive_time.to_f, @resp.time.to_f
+  end
+
+  def test_ntp_short_to_f
+    ntp_short = 1223
+
+    float = @packet.ntp_short_to_f ntp_short
+
+    assert_in_epsilon 0.01866, float
+  end
+
+  def test_ntp_timestamp_to_time
+    ntp_timestamp = 16309648884269799420
+
+    time_t = @packet.ntp_timestamp_to_time ntp_timestamp
+
+    expected = Time.at 1588397247.493153989
+
+    assert_equal expected, time_t
+  end
+
+  def test_time_to_ntp_timestamp
+    time_t = Time.at 1588397247.493153989
+
+    ntp_timestamp = @packet.time_to_ntp_timestamp time_t
+
+    expected = 16309648884269799420
+
+    assert_equal expected, ntp_timestamp
   end
 end
 

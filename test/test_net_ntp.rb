@@ -63,7 +63,7 @@ class TestNetNTP < Minitest::Test
       end
     end
 
-    assert_equal "159.203.82.102", result.reference_clock_identifier
+    assert_equal "159.203.82.102", result.reference_id
 
     expected = Time.at 1588310179.1521401
     assert_equal expected, result.time
@@ -85,8 +85,8 @@ class TestNetNTP < Minitest::Test
       @ntp.write message
     end
 
-    expected = Time.at 1588310179.1521401
-    assert_equal expected, result.time
+    expected = Time.at 1588397247.5137239
+    assert_in_epsilon expected.to_f, result.time.to_f
   end
 
   def test_write_timeout

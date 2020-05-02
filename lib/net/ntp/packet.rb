@@ -26,7 +26,7 @@ class Net::NTP::Packet
     3 => 'alarm condition (clock not synchronized)'
   }
 
-  REFERENCE_CLOCK_IDENTIFIER = {
+  REFERENCE_ID_DESCRIPTION = {
     'LOCL' => 'uncalibrated local clock used as a primary reference for a subnet without external means of synchronization',
     'PPS'  => 'atomic clock or other pulse-per-second source individually calibrated to national standards',
     'ACTS' => 'NIST dialup modem service',
@@ -58,7 +58,25 @@ class Net::NTP::Packet
     STRATUM[i] = 'reserved'
   end
 
+  ##
+  # Offset from NTP Epoch to TIME_T epoch
+
+  TIME_T_OFFSET = 2_208_988_800 # :nodoc:
+
   attr_accessor :client_time_received
+  attr_accessor :leap_indicator
+  attr_accessor :mode
+  attr_accessor :poll_interval
+  attr_accessor :version
+  attr_reader :stratum
+  attr_reader :precision
+  attr_reader :root_delay
+  attr_reader :root_dispersion
+  attr_reader :reference_id
+  attr_reader :reference_time
+  attr_reader :origin_time
+  attr_reader :receive_time
+  attr_reader :transmit_time
 
   def self.response(data, client_time_received)
     packet = new
@@ -71,76 +89,53 @@ class Net::NTP::Packet
     @client_time_received = nil
   end
 
-  def leap_indicator
-    @leap_indicator
-  end
-
   def leap_indicator_text
     @leap_indicator_text ||= LEAP_INDICATOR[@leap_indicator]
-  end
-
-  def version_number
-    @version_number
-  end
-
-  def mode
-    @mode
   end
 
   def mode_text
     @mode_text ||= Net::NTP::MODE[mode]
   end
 
-  def stratum
-    @stratum
-  end
-
   def stratum_text
     @stratum_text ||= STRATUM[stratum]
   end
 
-  def poll_interval
-    @poll_interval
+  def reference_id_description
+    @reference_clock_identifier_text ||=
+      REFERENCE_ID_DESCRIPTION[@reference_id]
   end
 
-  def precision
-    @_precision ||= @precision - 255
+  alias time receive_time
+
+  ##
+  # Convert a NTP Short into a Float
+
+  def ntp_short_to_f ntp_short
+    seconds  = ntp_short >> 16
+    fraction = (ntp_short & 0xffff).to_f / 0x10000
+
+    seconds + fraction
   end
 
-  def root_delay
-    @root_delay ||= bin2frac(@delay_fb)
+  ##
+  # Convert an NTP Timestamp into a Time
+
+  def ntp_timestamp_to_time ntp_timestamp
+    seconds  = (ntp_timestamp >> 32) - TIME_T_OFFSET
+    fraction = (ntp_timestamp & 0xffffffff).to_f / 0x100000000
+
+    Time.at seconds + fraction
   end
 
-  def root_dispersion
-    @root_dispersion
-  end
+  ##
+  # Convert a Time +time+ to an NTP Timestamp represented as an Integer
 
-  def reference_clock_identifier
-    @reference_clock_identifier ||= unpack_ip(@stratum, @ident)
-  end
+  def time_to_ntp_timestamp time
+    seconds  = (time.tv_sec + TIME_T_OFFSET) << 32
+    fraction = (time.tv_nsec / 1e9 * 0x100000000).to_i
 
-  def reference_clock_identifier_text
-    @reference_clock_identifier_text ||= REFERENCE_CLOCK_IDENTIFIER[reference_clock_identifier]
-  end
-
-  def reference_timestamp
-    @reference_timestamp ||= ((@ref_time + bin2frac(@ref_time_fb)) - Net::NTP::TIME_T_OFFSET)
-  end
-
-  def originate_timestamp
-    @originate_timestamp ||= (@org_time + bin2frac(@org_time_fb))
-  end
-
-  def receive_timestamp
-    @receive_timestamp ||= ((@recv_time + bin2frac(@recv_time_fb)) - Net::NTP::TIME_T_OFFSET)
-  end
-
-  def transmit_timestamp
-    @transmit_timestamp ||= ((@trans_time + bin2frac(@trans_time_fb)) - Net::NTP::TIME_T_OFFSET)
-  end
-
-  def time
-    @time ||= Time.at(receive_timestamp)
+    seconds + fraction
   end
 
   # As described in http://tools.ietf.org/html/rfc958
@@ -148,34 +143,33 @@ class Net::NTP::Packet
     @offset ||= (receive_timestamp - originate_timestamp + transmit_timestamp - client_time_received) / 2.0
   end
 
-  def unpack(data) #:nodoc:
-    fields = data.unpack "C C3 n B16 n B16 H8 N B32 N B32 N B32 N B32"
+  def unpack data #:nodoc:
+    fields = data.unpack "CCCcNNA4Q>Q>Q>Q>"
 
-    FIELDS.each do |field|
-      instance_variable_set field, fields.shift
-    end
+    @leap_version_mode = fields.shift
+    @stratum           = fields.shift
+    @poll_interval     = fields.shift
+    @precision         = fields.shift
+    @root_delay        = ntp_short_to_f fields.shift
+    @root_dispersion   = ntp_short_to_f fields.shift
+    @reference_id      = unpack_ip @stratum, fields.shift
+    @reference_time    = ntp_timestamp_to_time fields.shift
+    @origin_time       = ntp_timestamp_to_time fields.shift
+    @receive_time      = ntp_timestamp_to_time fields.shift
+    @transmit_time     = ntp_timestamp_to_time fields.shift
 
     @leap_indicator = (@leap_version_mode & 0xC0) >> 6
-    @version_number = (@leap_version_mode & 0x38) >> 3
+    @version        = (@leap_version_mode & 0x38) >> 3
     @mode           = (@leap_version_mode & 0x07)
+
+    nil
   end
 
-  def bin2frac(bin) #:nodoc:
-    frac = 0
-
-    bin.reverse.split("").each do |b|
-      frac = ( frac + b.to_i ) / 2.0
-    end
-
-    frac
-  end
-
-  def unpack_ip(stratum, tmp_ip) #:nodoc:
-    if stratum < 2
-      [tmp_ip].pack("H8").unpack("A4").bytes.first
+  def unpack_ip stratum, field #:nodoc:
+    if stratum < 2 then
+      field.delete "\x00"
     else
-      ipbytes = [tmp_ip].pack("H8").unpack("C4")
-      sprintf("%d.%d.%d.%d", ipbytes[0], ipbytes[1], ipbytes[2], ipbytes[3])
+      "%d.%d.%d.%d" % field.unpack("C4")
     end
   end
 end
