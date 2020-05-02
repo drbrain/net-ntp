@@ -6,35 +6,49 @@ module Net; end # :nodoc:
 class Net::NTP
   TIMEOUT = 60 #:nodoc:
 
-  MODE = {
-    0 => 'reserved',
-    1 => 'symmetric active',
-    2 => 'symmetric passive',
-    3 => 'client',
-    4 => 'server',
-    5 => 'broadcast',
-    6 => 'reserved for NTP control message',
-    7 => 'reserved for private use'
-  }
+  ##
+  # NTP host to connect to
 
   attr_reader :host
+
+  ##
+  # NTP port to connect to
+
   attr_reader :port
+
+  ##
+  # Timeout for reading a response to a packet
+
   attr_accessor :timeout
 
-  ###
-  # Sends an NTP datagram to the specified NTP server and returns
-  # a hash based upon RFC1305 and RFC2030.
+  ##
+  # Sends an NTP datagram to the +host+ and +port+ and returns the
+  # Net::NTP::Packet response.
+  #
+  # See also ::new
+
   def self.get(host, port: "ntp", timeout: TIMEOUT)
     ntp = new host, port: port, timeout: timeout
 
     ntp.get
   end
 
+  ##
+  # Create a new Net::NTP object that will connect to +host+ on +port+.
+  # Methods that send packets will wait up to +timeout+ seconds for a
+  # response.
+
   def initialize(host, port: "ntp", timeout: TIMEOUT)
     @host = host
     @port = port
     @timeout = timeout
   end
+
+  ##
+  # Query the NTP host for the current time.
+  #
+  # The current time of the remote server can be found in
+  # Net::NTP::Packet#time
 
   def get
     packet = Net::NTP::Packet.new
@@ -62,25 +76,17 @@ class Net::NTP
       raise timeout
     end
 
-    client_time_receive = Time.now.to_f
+    receive_time = Time.now.to_f
 
     data, _ = socket.recvfrom 960
 
-    Net::NTP::Packet.response data, client_time_receive
+    Net::NTP::Packet.read data, receive_time
   end
 
   private
 
-  def frac2bin(frac) #:nodoc:
-    bin  = ''
-
-    while bin.length < 32
-      bin += ( frac * 2 ).to_i.to_s
-      frac = ( frac * 2 ) - ( frac * 2 ).to_i
-    end
-
-    bin
-  end
+  ##
+  # The socket for NTP communication with the selected +host+ and +port+
 
   def socket
     @socket ||=
