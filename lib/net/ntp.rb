@@ -9,7 +9,7 @@ class Net::NTP
 
   TIME_T_OFFSET = 2_208_988_800 # :nodoc:
 
-  TIMEOUT = 60         #:nodoc:
+  TIMEOUT = 60 #:nodoc:
 
   MODE = {
     0 => 'reserved',
@@ -60,11 +60,12 @@ class Net::NTP
   def write message # :nodoc:
     socket.write message
 
-    read, = IO.select [socket], nil, nil, timeout
+    read, = IO.select [socket], nil, nil, @timeout
 
-    # For backwards compatibility we throw a Timeout error, even
-    # though the timeout is being controlled by select()
-    raise Timeout::Error if read.nil?
+    if read.nil? then
+      timeout = Net::NTP::Timeout.new @host, @port, message, @timeout
+      raise timeout
+    end
 
     client_time_receive = Time.now.to_f
 
@@ -96,5 +97,6 @@ class Net::NTP
   end
 end
 
+require "net/ntp/error"
 require "net/ntp/packet"
 require "net/ntp/version"

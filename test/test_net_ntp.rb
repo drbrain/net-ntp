@@ -88,4 +88,23 @@ class TestNetNTP < Minitest::Test
     expected = Time.at 1588310179.1521401
     assert_equal expected, result.time
   end
+
+  def test_write_timeout
+    @ntp.timeout = 0
+
+    message = "dummy message"
+
+    socket = FakeUDPSocket.new
+
+    e = assert_raises Net::NTP::Timeout do
+      @ntp.stub :socket, socket do
+        @ntp.write message
+      end
+    end
+
+    assert_equal "pool.ntp.org", e.host
+    assert_equal "ntp", e.port
+    assert_equal message, e.packet
+    assert_equal 0, e.timeout
+  end
 end
