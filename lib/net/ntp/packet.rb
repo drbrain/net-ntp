@@ -59,6 +59,18 @@ class Net::NTP::Packet
   end
 
   ##
+  # Converts +float+ into an NTP Short
+
+  def f_to_ntp_short float
+    integer_value = float.to_i
+
+    seconds  = integer_value.to_i << 16
+    fraction = ((float - integer_value) * 0x10000).to_i
+
+    seconds + fraction
+  end
+
+  ##
   # Convert a NTP Short into a Float
 
   def ntp_short_to_f ntp_short

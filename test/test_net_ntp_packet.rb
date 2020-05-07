@@ -46,6 +46,14 @@ class TestNetNTPPacket < Minitest::Test
     assert_in_epsilon expected_receive_time.to_f, @resp.time.to_f
   end
 
+  def test_f_to_ntp_short
+    float = 0.018662
+
+    ntp_short = @packet.f_to_ntp_short float
+
+    assert_equal 1223, ntp_short
+  end
+
   def test_ntp_short_to_f
     ntp_short = 1223
 
