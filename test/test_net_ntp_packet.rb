@@ -14,12 +14,13 @@ class TestNetNTPPacket < Minitest::Test
     @resp = Net::NTP::Packet.read @data, @time.to_f
 
     assert_equal 0, @resp.leap_indicator
-    assert_equal Net::NTP::Packet::LEAP_INDICATOR[0], @resp.leap_indicator_text
+    assert_equal Net::NTP::Packet::LEAP_INDICATOR[0],
+                 @resp.leap_indicator_text
     assert_equal 4, @resp.version
     assert_equal 4, @resp.mode
     assert_equal "server", @resp.mode_text
     assert_equal 1, @resp.stratum
-    assert_equal Net::NTP::Packet::STRATUM[1], @resp.stratum_text
+    assert_equal Net::NTP::ClientServerPacket::STRATUM[1], @resp.stratum_text
     assert_equal 8, @resp.poll_interval
     assert_equal(-20, @resp.precision)
     assert_in_epsilon 0, @resp.root_delay

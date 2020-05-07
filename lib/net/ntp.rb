@@ -63,7 +63,7 @@ class Net::NTP
   # Net::NTP::Packet#time
 
   def get
-    packet = Net::NTP::Packet.new
+    packet = Net::NTP::ClientServerPacket.new
     packet.leap_indicator = 3
     packet.version        = 4
     packet.mode           = 3
@@ -112,3 +112,4 @@ end
 
 require "net/ntp/error"
 require "net/ntp/packet"
+require "net/ntp/client_server_packet"
