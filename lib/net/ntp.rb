@@ -11,7 +11,7 @@ class Net::NTP
   ##
   # Default timeout when waiting for responses to packets
 
-  TIMEOUT = 60
+  TIMEOUT = 2.0
 
   ##
   # The current version of Net::NTP
