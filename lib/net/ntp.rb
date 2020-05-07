@@ -72,6 +72,14 @@ class Net::NTP
     write packet
   end
 
+  def readstat
+    packet = Net::NTP::ControlPacket.new
+    packet.request  = :READSTAT
+    packet.sequence = 1
+
+    write packet
+  end
+
   ##
   # Write +packet+ to the server and return the response Packet.
   #
@@ -113,3 +121,5 @@ end
 require "net/ntp/error"
 require "net/ntp/packet"
 require "net/ntp/client_server_packet"
+require "net/ntp/control_packet"
+require "net/ntp/peer_status"

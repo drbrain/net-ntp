@@ -1,0 +1,188 @@
+##
+# Packet for controlling an NTP server
+
+class Net::NTP::ControlPacket < Net::NTP::Packet
+  Net::NTP::Packet.mode_handler[6] = self
+
+  ##
+  # Control packet opcodes.
+  #
+  # Use these with #request=
+
+  OPCODES = {
+    READSTAT: 0x1,
+  }
+
+  ##
+  # Association ID to request data for
+
+  attr_accessor :association_id
+
+  ##
+  # True if there was an error in this response
+
+  attr_accessor :error
+
+  ##
+  # Bytes of packet data
+
+  attr_reader :count
+
+  ##
+  # Opcode-specific data from a response
+
+  attr_reader :data
+
+  ##
+  # True if there is another packet after this one
+
+  attr_accessor :more
+
+  attr_accessor :offset
+
+  ##
+  # True if this is a request packet
+
+  attr_accessor :request
+
+  ##
+  # Sequence number of this packet
+
+  attr_accessor :sequence
+
+  ##
+  # Opcode for this packet.
+  #
+  # See #request= to set this
+
+  attr_reader :opcode
+
+  def initialize # :nodoc:
+    super
+
+    @version = 4
+    @mode    = 6
+
+    @request = true
+    @error   = false
+    @more    = false
+    @opcode  = 0
+
+    @sequence       = 0
+    @status         = 0
+    @association_id = 0
+    @offset         = 0
+    @count          = 0
+  end
+
+  ##
+  # Set the request opcode for this packet to +type+ which must be a name from
+  # OPCODES.
+
+  def request= type
+    @opcode = OPCODES.fetch type
+  end
+
+  ##
+  # Returns a String representation of this packet.
+
+  def pack
+    [
+      pack_leap_version_mode,
+      pack_response_error_more_opcode,
+      @sequence,
+      @status,
+      @association_id,
+      @offset,
+      @count,
+    ].pack "CCnnnnn"
+  end
+
+  alias to_s pack
+
+  ##
+  # Pack the response, error, more and opcode fields
+
+  def pack_response_error_more_opcode
+    response =
+      if @request then
+        0
+      else
+        1 << 7
+      end
+
+    error =
+      if @error then
+        1 << 6
+      else
+        0
+      end
+
+    more =
+      if @more then
+        1 << 5
+      else
+        0
+      end
+
+    opcode = @opcode & 0x11111
+
+    response | error | more | opcode
+  end
+
+  ##
+  # Unpack fields +data+
+
+  def unpack data
+    fields = data.unpack "CCnnnnnnnn"
+
+    unpack_leap_version_mode          fields.shift
+    unpack_response_error_more_opcode fields.shift
+    @sequence                       = fields.shift
+    unpack_status                     fields.shift
+    @association_id                 = fields.shift
+    @offset                         = fields.shift
+    @count                          = fields.shift
+
+    case @opcode
+    when 1 then # READSTAT
+      fields = data.unpack "@12n#{@count / 2}"
+
+      @data = fields.each_slice(2).map { |association_id, peer_status|
+        unpack_peer_status association_id, peer_status
+      }
+    else
+      raise Net::NTP::UnknownOpcode.new self, data
+    end
+  end
+
+  ##
+  # Unpacks peer status from +data+ for +association_id+
+
+  def unpack_peer_status association_id, data
+    status = Net::NTP::PeerStatus.new association_id
+    status.unpack data
+
+    status
+  end
+
+  ##
+  # Unpacks the response, error, and more bits and the opcode.
+
+  def unpack_response_error_more_opcode field
+    @request = (field & 0b10000000) == 0
+    @error   = (field & 0b01000000) == 0b01000000
+    @more    = (field & 0b00100000) == 0b00100000
+    @opcode  = (field & 0b00011111)
+  end
+
+  ##
+  # Unpacks the status +field+
+
+  def unpack_status field
+    @status_leap_indicator = field >> 12
+    @clock_source          = (field >> 8) & 0b111111
+    @system_event_counter  = (field >> 4) & 0b1111
+    @system_event_code     = field        & 0b1111
+  end
+end
