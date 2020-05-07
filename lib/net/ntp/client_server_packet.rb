@@ -206,9 +206,9 @@ class Net::NTP::ClientServerPacket < Net::NTP::Packet
       @stratum,
       @poll_interval,
       @precision,
-      @root_delay,
-      @root_dispersion,
-      @reference_id,
+      f_to_ntp_short(@root_delay),
+      f_to_ntp_short(@root_dispersion),
+      pack_reference_id,
       time_to_ntp_timestamp(@reference_time),
       time_to_ntp_timestamp(@origin_time),
       time_to_ntp_timestamp(@receive_time),
@@ -238,6 +238,18 @@ class Net::NTP::ClientServerPacket < Net::NTP::Packet
     @transmit_time    = ntp_timestamp_to_time fields.shift
 
     nil
+  end
+
+  ##
+  # Packs the reference_id for an outbound packet based on the #stratum
+
+  def pack_reference_id
+    if stratum < 2 then
+      @reference_id
+    else
+      ip = @reference_id.split "."
+      ip.map { |octet| Integer octet }.pack "C4"
+    end
   end
 
   ##
