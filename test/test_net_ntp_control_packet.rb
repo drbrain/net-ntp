@@ -42,7 +42,7 @@ class TestNetNTPControlPacket < Minitest::Test
 
     peer_status = data.first
     assert_equal  6, peer_status.selection
-    assert_equal  3, peer_status.event_counter
+    assert_equal  3, peer_status.event_count
     assert_equal 10, peer_status.event_code
   end
 
