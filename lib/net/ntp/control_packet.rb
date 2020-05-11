@@ -5,13 +5,30 @@ class Net::NTP::ControlPacket < Net::NTP::Packet
   Net::NTP::Packet.mode_handler[6] = self
 
   ##
-  # Control packet opcodes.
+  # Maps control packet opcode names to their codes
   #
   # Use these with #request=
 
-  OPCODES = {
-    READSTAT: 0x1,
+  OPCODE_TO_CODE = {
+    READSTAT:      1,
+    READVAR:       2,
+    WRITEVAR:      3,
+    READCLOCK:     4,
+    WRITECLOCK:    5,
+    SETTRAP:       6,
+    ASYNCMSG:      7,
+    CONFIGURE:     8,
+    SAVECONFIG:    9,
+    READ_MRU:     10,
+    READ_ORDLIST: 11,
+    REQ_NONCE:    12,
+    UNSETTRAP:    31,
   }
+
+  ##
+  # Map control packet opcodes to their names
+
+  OPCODE_TO_NAME = OPCODE_TO_CODE.invert
 
   ##
   # Association ID to request data for
@@ -80,7 +97,7 @@ class Net::NTP::ControlPacket < Net::NTP::Packet
   # OPCODES.
 
   def request= type
-    @opcode = OPCODES.fetch type
+    @opcode = OPCODE_TO_CODE.fetch type
   end
 
   ##
@@ -184,5 +201,31 @@ class Net::NTP::ControlPacket < Net::NTP::Packet
     @clock_source          = (field >> 8) & 0b111111
     @system_event_counter  = (field >> 4) & 0b1111
     @system_event_code     = field        & 0b1111
+  end
+
+  def pretty_print q # :nodoc:
+    q.group 2, "[ControlPacket", "]" do
+      q.fill_breakable
+
+      q.text "opcode:"
+      q.fill_breakable
+      q.text OPCODE_TO_NAME.fetch @opcode, @opcode
+      q.fill_breakable
+
+      if @request then
+        q.text "request"
+      else
+        q.text "response"
+      end
+      q.comma_breakable
+
+      q.group 2, "data: [", "]" do
+        q.fill_breakable
+
+        q.seplist @data do |d|
+          q.pp d
+        end
+      end
+    end
   end
 end

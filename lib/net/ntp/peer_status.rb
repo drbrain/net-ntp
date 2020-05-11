@@ -99,18 +99,18 @@ class Net::NTP::PeerStatus
       q.text "assoc_id:"
       q.fill_breakable
       q.pp @association_id
-      q.fill_breakable ", "
+      q.comma_breakable
 
       if @reach then
         q.text "selection:"
         q.fill_breakable
         q.pp SELECTIONS.fetch @selection, @selections
-        q.fill_breakable ", "
+        q.comma_breakable
 
         q.text "event:"
         q.fill_breakable
         q.pp EVENT_CODES.fetch @event_code, @event_code
-        q.fill_breakable ", "
+        q.comma_breakable
 
         q.text "count:"
         q.fill_breakable
