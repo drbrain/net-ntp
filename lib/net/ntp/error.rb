@@ -14,11 +14,6 @@ class Net::NTP::Timeout < Net::NTP::Error
   attr_reader :host
 
   ##
-  # Sent packet that timed out
-
-  attr_reader :packet
-
-  ##
   # Port for the packet that timed out
 
   attr_reader :port
@@ -29,12 +24,11 @@ class Net::NTP::Timeout < Net::NTP::Error
   attr_reader :timeout
 
   ##
-  # Create a new Timeout for +host+, +port+, +packet+, +timeout+
+  # Create a new Timeout for +host+, +port+, +timeout+
 
-  def initialize host, port, packet, timeout
+  def initialize host, port, timeout
     @host    = host
     @port    = port
-    @packet  = packet
     @timeout = timeout
 
     super "Timed out waiting #{timeout} seconds for a response from #{host}:#{port}"

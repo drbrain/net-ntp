@@ -46,6 +46,25 @@ class TestNetNTPControlPacket < Minitest::Test
     assert_equal 10, peer_status.event_code
   end
 
+  def test_unpack_READVAR_response
+    data = "&\x82\x00\x00\x16\xAA;\xB2\x01\xD4\x00Y29 5.11 -0.34 14.75 0.57,\r\nfiltdisp= 0.00 1.94 3.96 5.90 7.85 9.78 11.78 13.76\r\n\x00\x00\x00"
+
+    @packet.unpack data
+
+    assert_equal 0, @packet.sequence
+    assert_equal 15282, @packet.association_id
+    assert_equal 468, @packet.offset
+    assert_equal 89, @packet.count
+
+    data = @packet.data
+
+    expected = [
+      "29 5.11 -0.34 14.75 0.57,\r\nfiltdisp= 0.00 1.94 3.96 5.90 7.85 9.78 11.78 13.76\r\n",
+    ]
+
+    assert_equal expected, data
+  end
+
   def test_unpack_response_error_more_opcode
     @packet.unpack_response_error_more_opcode 0b11111111
 

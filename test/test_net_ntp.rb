@@ -51,60 +51,65 @@ class TestNetNTP < Minitest::Test
     @now = Time.at 1588310179.1521401
   end
 
-  def test_response_methods
-    response = "\x1C\x03\x03\xE8\x00\x00\x03\xB6\x00\x00\x04\xC7\x9F\xCBRf\xE2V.\xB0\"D\xF4\x8A^\xAB\xB0\xA3\xEF\x8Dz\xC4\xE2V/#&\xF2\xA9g\xE2V/#&\xF4Ci"
-
+  def test_readvar
     socket = FakeUDPSocket.new
-    socket.add_read_value response
+    socket.add_read_value "&\xA2\x00\x00\x16\xAA;\xB2\x00\x00\x01\xD4srcadr=192.0.2.123, srcport=123, dstadr=192.0.2.234, dstport=123,\r\nleap=0, stratum=2, precision=-24, rootdelay=0.122, rootdisp=37.628,\r\nrefid=192.0.2.34, reftime=0xe26366b2.3a504a3c,\r\nrec=0xe2636bd5.67597978, reach=0xff, unreach=0, hmode=3, pmode=4,\r\nhpoll=7, ppoll=7, headway=4, flash=0x0, keyid=0, offset=-0.342,\r\ndelay=30.315, dispersion=8.959, jitter=8.139, xleave=0.059,\r\nfiltdelay= 32.47 34.12 57.99 33.15 42.06 30.31 60.38 31.65,\r\nfiltoffset= 1.33 1.65 13.66 1."
+    socket.add_read_value "&\x82\x00\x00\x16\xAA;\xB2\x01\xD4\x00Y29 5.11 -0.34 14.75 0.57,\r\nfiltdisp= 0.00 1.94 3.96 5.90 7.85 9.78 11.78 13.76\r\n\x00\x00\x00"
 
     result = @ntp.stub :socket, socket do
-      Time.stub :now, @now do
-        @ntp.get
-      end
+      @ntp.readvar 123
     end
 
-    assert_equal "159.203.82.102", result.reference_id
+    sent = socket.write_values.first
+    assert_equal 2,   sent.opcode
+    assert_equal 123, sent.association_id
+    assert_equal 1,   sent.sequence
 
-    expected = Time.at 1588310179.1521401
-    assert_equal expected, result.time
-
-    expected = "\xE3\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xE2V/#&\xF2\xA7\xFD".b
-
-    assert_equal expected, socket.write_values.first.to_s
+    assert_kind_of Net::NTP::Variables, result
   end
 
   def test_write
+    assert_equal 1, @ntp.sequence, "sequence precondition failed"
+
     message = "dummy message"
 
+    socket = FakeUDPSocket.new
+
+    result = @ntp.stub :socket, socket do
+      @ntp.write message
+    end
+
+    assert_equal [message], socket.write_values
+    assert_equal 2, @ntp.sequence
+  end
+
+  def test_read
     response = "\x1C\x03\x03\xE8\x00\x00\x03\xB6\x00\x00\x04\xC7\x9F\xCBRf\xE2V.\xB0\"D\xF4\x8A^\xAB\xB0\xA3\xEF\x8Dz\xC4\xE2V/#&\xF2\xA9g\xE2V/#&\xF4Ci"
 
     socket = FakeUDPSocket.new
     socket.add_read_value response
 
     result = @ntp.stub :socket, socket do
-      @ntp.write message
+      @ntp.read
     end
 
     expected = Time.at 1588397247.5137239
     assert_in_epsilon expected.to_f, result.time.to_f
   end
 
-  def test_write_timeout
+  def test_read_timeout
     @ntp.timeout = 0
-
-    message = "dummy message"
 
     socket = FakeUDPSocket.new
 
     e = assert_raises Net::NTP::Timeout do
       @ntp.stub :socket, socket do
-        @ntp.write message
+        @ntp.read
       end
     end
 
     assert_equal "pool.ntp.org", e.host
-    assert_equal "ntp", e.port
-    assert_equal message, e.packet
-    assert_equal 0, e.timeout
+    assert_equal "ntp",          e.port
+    assert_equal 0,              e.timeout
   end
 end

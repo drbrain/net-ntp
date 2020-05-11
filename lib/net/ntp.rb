@@ -29,6 +29,11 @@ class Net::NTP
   attr_reader :port
 
   ##
+  # Sequence number of control packets requests
+
+  attr_reader :sequence
+
+  ##
   # Timeout for reading a response to a packet
 
   attr_accessor :timeout
@@ -54,6 +59,8 @@ class Net::NTP
     @host = host
     @port = port
     @timeout = timeout
+
+    @sequence = 1
   end
 
   ##
@@ -70,29 +77,68 @@ class Net::NTP
     packet.transmit_time  = Time.now
 
     write packet
+
+    read
   end
+
+  ##
+  # Read peer statistics for all associations
 
   def readstat
     packet = Net::NTP::ControlPacket.new
     packet.request  = :READSTAT
-    packet.sequence = 1
+    packet.sequence = @sequence
 
     write packet
+
+    read
   end
 
   ##
-  # Write +packet+ to the server and return the response Packet.
+  # Read peer variables of +association_id+
+
+  def readvar association_id
+    packet = Net::NTP::ControlPacket.new
+    packet.request  = :READVAR
+    packet.sequence = @sequence
+    packet.association_id = association_id
+
+    write packet
+
+    responses = []
+
+    begin
+      responses << read
+    end while responses.last.more?
+
+    Net::NTP::Variables.new responses
+  end
+
+  # :section: IO
+
+  ##
+  # The socket for NTP communication with the selected +host+ and +port+
+
+  def socket # :nodoc:
+    @socket ||=
+      begin
+        s = UDPSocket.new
+        s.connect @host, @port
+        s
+      end
+  end
+
+  ##
+  # Reads and returns a packet from the server
   #
   # If the server does not respond within the timeout a Timeout::Error is
   # raised.
 
-  def write packet # :nodoc:
-    socket.write packet
-
+  def read
     read, = IO.select [socket], nil, nil, @timeout
 
     if read.nil? then
-      timeout = Net::NTP::Timeout.new @host, @port, packet, @timeout
+      timeout = Net::NTP::Timeout.new @host, @port, @timeout
       raise timeout
     end
 
@@ -103,18 +149,13 @@ class Net::NTP
     Net::NTP::Packet.read data, receive_time
   end
 
-  private
-
   ##
-  # The socket for NTP communication with the selected +host+ and +port+
+  # Write +packet+ to the server
 
-  def socket
-    @socket ||=
-      begin
-        s = UDPSocket.new
-        s.connect @host, @port
-        s
-      end
+  def write packet
+    @sequence += 1
+
+    socket.write packet
   end
 end
 
@@ -123,3 +164,4 @@ require "net/ntp/packet"
 require "net/ntp/client_server_packet"
 require "net/ntp/control_packet"
 require "net/ntp/peer_status"
+require "net/ntp/variables"

@@ -55,6 +55,11 @@ class Net::NTP::ControlPacket < Net::NTP::Packet
 
   attr_accessor :more
 
+  alias more? more
+
+  ##
+  # Offset of data in this packet in the complete response for the request
+
   attr_accessor :offset
 
   ##
@@ -93,11 +98,11 @@ class Net::NTP::ControlPacket < Net::NTP::Packet
   end
 
   ##
-  # Set the request opcode for this packet to +type+ which must be a name from
+  # Set the request opcode for this packet to +name+ which must be a name from
   # OPCODES.
 
-  def request= type
-    @opcode = OPCODE_TO_CODE.fetch type
+  def request= name
+    @opcode = OPCODE_TO_CODE.fetch name
   end
 
   ##
@@ -142,7 +147,7 @@ class Net::NTP::ControlPacket < Net::NTP::Packet
         0
       end
 
-    opcode = @opcode & 0x11111
+    opcode = @opcode & 0b11111
 
     response | error | more | opcode
   end
@@ -168,6 +173,8 @@ class Net::NTP::ControlPacket < Net::NTP::Packet
       @data = fields.each_slice(2).map { |association_id, peer_status|
         unpack_peer_status association_id, peer_status
       }
+    when 2 then # READVAR
+      @data = data.unpack "@12Z*"
     else
       raise Net::NTP::UnknownOpcode.new self, data
     end
@@ -219,13 +226,9 @@ class Net::NTP::ControlPacket < Net::NTP::Packet
       end
       q.comma_breakable
 
-      q.group 2, "data: [", "]" do
-        q.fill_breakable
-
-        q.seplist @data do |d|
-          q.pp d
-        end
-      end
+      q.text "data:"
+      q.fill_breakable
+      q.pp @data
     end
   end
 end
