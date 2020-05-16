@@ -79,6 +79,21 @@ class Net::NTP::PeerStatus
   end
 
   ##
+  # Two PeerStatus objects are equal when all their fields are equal
+
+  def == other
+    Net::NTP::PeerStatus === other and
+      other.configured  == @configured   and
+      other.authenable  == @authenable   and
+      other.authentic   == @authentic    and
+      other.reach       == @reach        and
+      other.reserved    == @reserved     and
+      other.selection   == @selection    and
+      other.event_count == @event_count  and
+      other.event_code  == @event_code
+  end
+
+  ##
   # Extracts peer status fields from +data+
 
   def unpack data

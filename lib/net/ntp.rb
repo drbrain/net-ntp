@@ -91,7 +91,7 @@ class Net::NTP
 
     write packet
 
-    read
+    read.data
   end
 
   ##

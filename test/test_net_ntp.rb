@@ -51,6 +51,24 @@ class TestNetNTP < Minitest::Test
     @now = Time.at 1588310179.1521401
   end
 
+  def test_readstat
+    socket = FakeUDPSocket.new
+    socket.add_read_value "&\x81\x00\x01\x06\x15\x00\x00\x00\x00\x00\x18\"\x83\x16z\"\x82\x14z\"\x81\x14\x1A\"\x7F\x93\x14\"~\x93\x14\"}\x88\x11"
+
+    result = @ntp.stub :socket, socket do
+      @ntp.readstat
+    end
+
+    sent = socket.write_values.first
+    assert_equal 1, sent.opcode
+    assert_equal 1, sent.sequence
+
+    stat = Net::NTP::PeerStatus.new 8835
+    stat.unpack 5754
+
+    assert_equal stat, result.first
+  end
+
   def test_readvar
     socket = FakeUDPSocket.new
     socket.add_read_value "&\xA2\x00\x00\x16\xAA;\xB2\x00\x00\x01\xD4srcadr=192.0.2.123, srcport=123, dstadr=192.0.2.234, dstport=123,\r\nleap=0, stratum=2, precision=-24, rootdelay=0.122, rootdisp=37.628,\r\nrefid=192.0.2.34, reftime=0xe26366b2.3a504a3c,\r\nrec=0xe2636bd5.67597978, reach=0xff, unreach=0, hmode=3, pmode=4,\r\nhpoll=7, ppoll=7, headway=4, flash=0x0, keyid=0, offset=-0.342,\r\ndelay=30.315, dispersion=8.959, jitter=8.139, xleave=0.059,\r\nfiltdelay= 32.47 34.12 57.99 33.15 42.06 30.31 60.38 31.65,\r\nfiltoffset= 1.33 1.65 13.66 1."
