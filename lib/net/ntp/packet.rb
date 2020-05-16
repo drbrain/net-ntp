@@ -1,3 +1,13 @@
+##
+# Generic NTP packet type.
+#
+# Usually you will want to subclass this and register it as a mode handler so
+# Net::NTP#read will create the correct packet subclass automatically.
+#
+# Subclasses must implement a #unpack method which accepts a String argument
+# containing the packet data and a #pack method which returns a String of
+# packet data.
+
 class Net::NTP::Packet
   ##
   # Meaning of the #leap_indicator value
@@ -31,6 +41,14 @@ class Net::NTP::Packet
   @mode_handler = {}
 
   class << self
+    ##
+    # List of registered packet mode handlers
+    #
+    #   class Net::NTP::ControlPacket < Net::NTP::Packet
+    #     Net::NTP::Packet.mode_handler[6] = self
+    #     # …
+    #   end
+
     attr_reader :mode_handler
   end
 
@@ -50,7 +68,31 @@ class Net::NTP::Packet
     packet
   end
 
+  ##
+  # Time this packet was received
+
   attr_accessor :client_time_received
+
+  ##
+  # Leap indicator, see LEAP_INDICATOR for values
+
+  attr_accessor :leap_indicator
+
+  ##
+  # Packet mode, see MODE for values
+
+  attr_accessor :mode
+
+  ##
+  # NTP protocol version
+
+  attr_accessor :version
+
+  ##
+  # A Net::NTP::Packet is initialized with zeros for #leap_indicator, #version
+  # and #mode.
+  #
+  # You probably want to subclass this class, or use one of its subclasses.
 
   def initialize
     @leap_indicator = 0
@@ -102,6 +144,9 @@ class Net::NTP::Packet
     seconds + fraction
   end
 
+  ##
+  # Packs the #leap, #version, and #mode flags at the start of an NTP packet.
+
   def pack_leap_version_mode
     leap_version_mode = 0
     leap_version_mode += (@leap_indicator & 0b11) << 6
@@ -109,6 +154,9 @@ class Net::NTP::Packet
     leap_version_mode += (@mode & 0b111)
     leap_version_mode
   end
+
+  ##
+  # Unpacks the #leap, #version, and #mode flags from +leap_version_mode+.
 
   def unpack_leap_version_mode leap_version_mode
     @leap_indicator = (leap_version_mode & 0xC0) >> 6
