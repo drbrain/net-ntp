@@ -83,6 +83,9 @@ class Net::NTP
 
   ##
   # Read peer statistics for all associations
+  #
+  # Returns an Array of PeerStatus objects, one for each association known to
+  # the NTP host.
 
   def readstat
     packet = Net::NTP::ControlPacket.new
@@ -96,6 +99,8 @@ class Net::NTP
 
   ##
   # Read peer variables of +association_id+
+  #
+  # Returns the Net::NTP::Variables for the +association_id+
 
   def readvar association_id
     packet = Net::NTP::ControlPacket.new

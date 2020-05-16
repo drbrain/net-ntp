@@ -3,35 +3,153 @@
 
 class Net::NTP::Variables
 
+  ##
+  # Roundtrip delay
+
   attr_reader :delay
+
+  ##
+  # Total dispersion to the primary reference clock
+
   attr_reader :dispersion
+
+  ##
+  # Destination IP address (local to NTP server)
+
   attr_reader :dstadr
+
+  ##
+  # Destination port (local to NTP server)
+
   attr_reader :dstport
+
+  ##
+  # Filter delay
+
   attr_reader :filtdelay
+
+  ##
+  # Filter dispersion
+
   attr_reader :filtdisp
+
+  ##
+  # Filter offset
+
   attr_reader :filtoffset
+
+  ##
+  # Flash status word
+
   attr_reader :flash
+
+  ##
+  # Headway time
+
   attr_reader :headway
+
+  ##
+  # Host mode
+
   attr_reader :hmode
+
+  ##
+  # Host poll exponent (log₂ seconds, 3–17)
+
   attr_reader :hpoll
+
+  ##
+  # Jitter
+
   attr_reader :jitter
+
+  ##
+  # Key ID
+
   attr_reader :keyid
+
+  ##
+  # Leap warning indicator
+
   attr_reader :leap
+
+  ##
+  # Offset of server relative to this host
+
   attr_reader :offset
+
+  ##
+  # Peer mode
+
   attr_reader :pmode
+
+  ##
+  # Peer poll exponent (log₂ seconds, 3–17)
+
   attr_reader :ppoll
+
+  ##
+  # Precision (log₂ seconds)
+
   attr_reader :precision
+
+  ##
+  # Reach register
+
   attr_reader :reach
+
+  ##
+  # Received time
+
   attr_reader :rec
+
+  ##
+  # Association ID or kiss code
+
   attr_reader :refid
+
+  ##
+  # Reference time
+
   attr_reader :reftime
+
+  ##
+  # Total roundtrip delay to the primary reference clock
+
   attr_reader :rootdelay
+
+  ##
+  # Total dispersion to the primary reference clock
+
   attr_reader :rootdisp
+
+  ##
+  # Source (remote) IP address
+
   attr_reader :srcadr
+
+  ##
+  # Source (remote) port
+
   attr_reader :srcport
+
+  ##
+  # Clock stratum
+
   attr_reader :stratum
+
+  ##
+  # Unreach counter
+
   attr_reader :unreach
+
+  ##
+  # Interleave delay
+
   attr_reader :xleave
+
+  ##
+  # Creates a new Variables object from the data contained in +packets+.
 
   def initialize packets
     text = packets.map(&:data).join.chomp
