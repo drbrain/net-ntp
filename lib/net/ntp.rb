@@ -119,6 +119,44 @@ class Net::NTP
     Net::NTP::Variables.new responses
   end
 
+  ##
+  # Read system info variables
+
+  def sysinfo
+    packet = Net::NTP::ControlPacket.new
+    packet.request  = :READVAR
+    packet.sequence = @sequence
+
+    variables = %w[
+      authdelay
+      bcastdelay
+      clk_jitter
+      clk_wander
+      leap
+      peeradr
+      peermode
+      precision
+      refid
+      reftime
+      rootdelay
+      rootdisp
+      stratum
+      sys_jitter
+    ].join ","
+
+    packet.data = variables
+
+    write packet
+
+    responses = []
+
+    begin
+      responses << read
+    end while responses.last.more?
+
+    Net::NTP::Variables.new responses
+  end
+
   # :section: IO
 
   ##

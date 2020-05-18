@@ -48,7 +48,7 @@ class Net::NTP::ControlPacket < Net::NTP::Packet
   ##
   # Opcode-specific data from a response
 
-  attr_reader :data
+  attr_accessor :data
 
   ##
   # True if there is another packet after this one
@@ -109,6 +109,10 @@ class Net::NTP::ControlPacket < Net::NTP::Packet
   # Returns a String representation of this packet.
 
   def pack
+    if @data then
+      @count = @data.bytesize
+    end
+
     [
       pack_leap_version_mode,
       pack_response_error_more_opcode,
@@ -117,7 +121,9 @@ class Net::NTP::ControlPacket < Net::NTP::Packet
       @association_id,
       @offset,
       @count,
-    ].pack "CCnnnnn"
+      @data,
+      0,
+    ].pack "CCnnnnna*n"
   end
 
   alias to_s pack

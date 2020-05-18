@@ -86,6 +86,23 @@ class TestNetNTP < Minitest::Test
     assert_kind_of Net::NTP::Variables, result
   end
 
+  def test_sysinfo
+    socket = FakeUDPSocket.new
+    socket.add_read_value "&\x82\x00\x01\x06\x18\x00\x00\x00\x00\x00\xFEleap=0, stratum=2, precision=-20, rootdelay=5.423, rootdisp=54.797,\r\nrefid=10.101.28.137, reftime=0xe26c9f28.2d4888a7, sys_jitter=1.740711,\r\nclk_jitter=0.817, clk_wander=0.246, peeradr=10.101.28.137:123,\r\npeermode=3, bcastdelay=-50.000, authdelay=0.000\r\n\x00\x00"
+
+    result = @ntp.stub :socket, socket do
+      @ntp.sysinfo
+    end
+
+    sent = socket.write_values.first
+    assert_equal 2, sent.opcode
+    assert_equal 1, sent.sequence
+    expected = "authdelay,bcastdelay,clk_jitter,clk_wander,leap,peeradr,peermode,precision,refid,reftime,rootdelay,rootdisp,stratum,sys_jitter"
+    assert_equal expected, sent.data
+
+    assert_kind_of Net::NTP::Variables, result
+  end
+
   def test_write
     assert_equal 1, @ntp.sequence, "sequence precondition failed"
 

@@ -21,7 +21,7 @@ class TestNetNTPControlPacket < Minitest::Test
 
     packed = @packet.pack
 
-    expected = "&\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00".b
+    expected = "&\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00".b
 
     assert_equal expected, packed
   end
