@@ -164,6 +164,7 @@ class Net::NTP
   end
 end
 
+require "net/ntp/conversion"
 require "net/ntp/error"
 require "net/ntp/packet"
 require "net/ntp/client_server_packet"

@@ -9,6 +9,8 @@
 # packet data.
 
 class Net::NTP::Packet
+  include Net::NTP::Conversion
+
   ##
   # Meaning of the #leap_indicator value
 
@@ -32,11 +34,6 @@ class Net::NTP::Packet
     6 => 'reserved for NTP control message',
     7 => 'reserved for private use'
   }
-
-  ##
-  # Offset from NTP Epoch to TIME_T epoch
-
-  TIME_T_OFFSET = 2_208_988_800 # :nodoc:
 
   @mode_handler = {}
 
@@ -98,50 +95,6 @@ class Net::NTP::Packet
     @leap_indicator = 0
     @version        = 4
     @mode           = 0
-  end
-
-  ##
-  # Converts +float+ into an NTP Short
-
-  def f_to_ntp_short float
-    integer_value = float.to_i
-
-    seconds  = integer_value.to_i << 16
-    fraction = ((float - integer_value) * 0x10000).to_i
-
-    seconds + fraction
-  end
-
-  ##
-  # Convert a NTP Short into a Float
-
-  def ntp_short_to_f ntp_short
-    seconds  = ntp_short >> 16
-    fraction = (ntp_short & 0xffff).to_f / 0x10000
-
-    seconds + fraction
-  end
-
-  ##
-  # Convert an NTP Timestamp into a Time
-
-  def ntp_timestamp_to_time ntp_timestamp
-    seconds  = (ntp_timestamp >> 32) - TIME_T_OFFSET
-    fraction = (ntp_timestamp & 0xffffffff).to_f / 0x100000000
-
-    Time.at seconds + fraction
-  end
-
-  ##
-  # Convert a Time +time+ to an NTP Timestamp represented as an Integer
-
-  def time_to_ntp_timestamp time
-    return 0 unless time
-
-    seconds  = (time.tv_sec + TIME_T_OFFSET) << 32
-    fraction = (time.tv_nsec / 1e9 * 0x100000000).to_i
-
-    seconds + fraction
   end
 
   ##

@@ -2,6 +2,7 @@
 # NTP variables returned from a READVAR request
 
 class Net::NTP::Variables
+  include Net::NTP::Conversion
 
   ##
   # Roundtrip delay
