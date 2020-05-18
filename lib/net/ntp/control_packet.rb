@@ -109,21 +109,27 @@ class Net::NTP::ControlPacket < Net::NTP::Packet
   # Returns a String representation of this packet.
 
   def pack
-    if @data then
-      @count = @data.bytesize
-    end
+    format = "CCnnnnn"
 
-    [
+    fields = [
       pack_leap_version_mode,
       pack_response_error_more_opcode,
       @sequence,
       @status,
       @association_id,
       @offset,
-      @count,
-      @data,
-      0,
-    ].pack "CCnnnnna*n"
+    ]
+
+    # count field
+    if @data then
+      format << "a*n"
+
+      fields.push @data.bytesize, @data, 0
+    else
+      fields << 0
+    end
+
+    fields.pack format
   end
 
   alias to_s pack
