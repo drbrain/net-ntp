@@ -5,6 +5,26 @@ class Net::NTP::Variables
   include Net::NTP::Conversion
 
   ##
+  # Symmetric authentication delay (sysinfo)
+
+  attr_reader :authdelay
+
+  ##
+  # Broadcast delay
+
+  attr_reader :bcastdelay
+
+  ##
+  # Clock jitter (sysinfo)
+
+  attr_reader :clk_jitter
+
+  ##
+  # Clock wander (sysinfo)
+
+  attr_reader :clk_wander
+
+  ##
   # Roundtrip delay
 
   attr_reader :delay
@@ -80,6 +100,16 @@ class Net::NTP::Variables
   attr_reader :offset
 
   ##
+  # Peer host and port (sysinfo)
+
+  attr_reader :peeradr
+
+  ##
+  # Peer mode (sysinfo)
+
+  attr_reader :peermode
+
+  ##
   # Peer mode
 
   attr_reader :pmode
@@ -145,6 +175,11 @@ class Net::NTP::Variables
   attr_reader :stratum
 
   ##
+  # System jitter (sysinfo)
+
+  attr_reader :sys_jitter
+
+  ##
   # Unreach counter
 
   attr_reader :unreach
@@ -167,12 +202,17 @@ class Net::NTP::Variables
     }.each { |name, value|
       value =
         case name
-        when "delay",
+        when "authdelay",
+             "bcastdelay",
+             "clk_jitter",
+             "clk_wander",
+             "delay",
              "dispersion",
              "jitter",
              "offset",
              "rootdelay",
              "rootdisp",
+             "sys_jitter",
              "xleave" then
           Float value
         when "dstport",
@@ -182,6 +222,7 @@ class Net::NTP::Variables
              "hpoll",
              "keyid",
              "leap",
+             "peermode",
              "pmode",
              "ppoll",
              "precision",
