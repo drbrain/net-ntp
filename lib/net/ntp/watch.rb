@@ -1,9 +1,60 @@
 require "curses"
+require "ipaddr"
 require "net/ntp"
 require "resolv"
 require "thread"
 
 class Net::NTP::Watch
+
+  REFCLOCK = IPAddr.new "127.127.0.0/16"
+
+  REFCLOCKS = {
+    0 => "UNKNOWN",
+    1 => "LOCAL",
+    2 => "GPS_TRAK",
+    3 => "WWV_PST",
+    4 => "SPETRACOM",
+    5 => "TRUETIME",
+    6 => "IRIG_AUDIO",
+    7 => "CHU_AUDIO",
+    8 => "GENERIC",
+    9 => "GPS_MX4200",
+    10 => "GPS_AS2201",
+    11 => "GPS_ARBITER",
+    12 => "IRIG_TPRO",
+    13 => "ATOM_LEITCH",
+    14 => "MSF_EES",
+    16 => "GPS_BANC",
+    17 => "GPS_DATUM",
+    18 => "ACTS_MODEM",
+    19 => "WWV_HEATH",
+    20 => "GPS_NMEA",
+    21 => "GPS_VME",
+    22 => "PPS",
+    26 => "GPS_HP",
+    27 => "MSF_ARCRON",
+    28 => "SHM",
+    29 => "GPS_PALISADE",
+    30 => "GPS_ONCORE",
+    31 => "GPS_JUPITER",
+    32 => "CHRONOLOG",
+    33 => "DUMBCLOCK",
+    34 => "ULINK_M320",
+    35 => "PCF",
+    36 => "WWV_AUDIO",
+    37 => "GPS_FG",
+    38 => "HOPF_S",
+    39 => "HOPF_P",
+    40 => "JJY",
+    41 => "TT_IRIG",
+    42 => "GPS_ZYFER",
+    43 => "GPS_RIPENCC",
+    44 => "NEOCLK4X",
+    45 => "PCI_TSYNC",
+    46 => "GPSD_JSON",
+  }
+
+  REFCLOCKS.default = "NOT_USED"
 
   def self.run
     watch = new
@@ -61,7 +112,17 @@ class Net::NTP::Watch
   end
 
   def resolve addr
-    @resolv.getname addr
+    case addr
+    when REFCLOCK then
+      addr = IPAddr.new(addr).to_i
+      refclock = (addr & 0xff00) >> 8
+      "%s(%d)" % [
+        REFCLOCKS[refclock],
+        addr & 0xff
+      ]
+    else
+      @resolv.getname addr
+    end
   rescue Resolv::ResolvError,
          Resolv::ResolvTimeout
     addr
