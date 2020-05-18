@@ -25,6 +25,19 @@ class Net::NTP::PeerStatus
     7 => "pps peer",
   }
 
+  ##
+  # Maps #selection to a status code
+
+  TALLY = {
+    0 => " ",
+    1 => "x",
+    2 => ".",
+    3 => "-",
+    4 => "+",
+    5 => "#",
+    6 => "*",
+    7 => "o",
+  }
 
   ##
   # Peer association ID
