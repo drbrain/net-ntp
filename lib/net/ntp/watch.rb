@@ -96,6 +96,7 @@ class Net::NTP::Watch
     @display.stop if @display
 
     @display = @display_class.new self, @host
+    @display.update
     @display.show
   end
 

@@ -38,12 +38,17 @@ class Net::NTP::Watch::Message < Curses::Window
   def error message
     clear
     addstr message
-    noutrefresh
+    refresh
     Curses.flash
   end
 
   def get_host
-    prompt "host"
+    host = prompt "host"
+    host.strip!
+
+    return @watch.host if host.empty?
+
+    host
   end
 
   ##

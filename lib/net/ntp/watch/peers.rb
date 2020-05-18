@@ -9,7 +9,6 @@ class Net::NTP::Watch::Peers < Net::NTP::Watch::Display
 
     @ntp    = Net::NTP.new host
     @peers  = nil
-    @update = update
   end
 
   def show
@@ -32,25 +31,9 @@ class Net::NTP::Watch::Peers < Net::NTP::Watch::Display
     end
   end
 
-  def stop
-    @update.kill
-
-    super
-  end
-
   def update
-    Thread.new do
-      Thread.current.abort_on_exception = true
-
-      loop do
-        update_peers
-
-        show
-
-        Curses.doupdate
-
-        sleep 2
-      end
+    super do
+      update_peers
     end
   end
 

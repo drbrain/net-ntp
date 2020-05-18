@@ -19,8 +19,6 @@ class Net::NTP::Watch::Display < Curses::Pad
     noutrefresh
   end
 
-  alias rows maxy
-
   def max_row
     maxy - Curses.lines + 1
   end
@@ -42,6 +40,8 @@ class Net::NTP::Watch::Display < Curses::Pad
     noutrefresh
   end
 
+  alias rows maxy
+
   def show
     clear
 
@@ -51,6 +51,8 @@ class Net::NTP::Watch::Display < Curses::Pad
   end
 
   def stop
+    @update.kill
+
     clear
 
     refresh
@@ -93,6 +95,26 @@ class Net::NTP::Watch::Display < Curses::Pad
 
   def refresh
     super(*screen_position)
+  end
+
+  def update
+    @update = Thread.new do
+      #Thread.current.report_on_exception = false
+
+      begin
+        loop do
+          yield
+
+          show
+
+          Curses.doupdate
+
+          sleep 2
+        end
+      rescue Exception => e
+        @watch.message.error e.message
+      end
+    end
   end
 
   def update_size
