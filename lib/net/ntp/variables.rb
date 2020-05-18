@@ -192,9 +192,8 @@ class Net::NTP::Variables
           fields.map { |v|
             Float v
           }
-        when "rec",
-             "reftime" then
-          value
+        when "rec", "reftime" then
+          ts_to_time value
         else
           value
         end
