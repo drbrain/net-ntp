@@ -1,16 +1,13 @@
-require "ipaddr"
-
 class Net::NTP::Watch::Peers < Net::NTP::Watch::Display
 
   MULTICAST_V4 = IPAddr.new "224.0.0.0/4"
   MULTICAST_V6 = IPAddr.new "ff00::/8"
-  REFCLOCK     = IPAddr.new "127.127.0.0/16"
   UNSPEC       = IPAddr.new "0.0.0.0"
 
-  def initialize watch, host:, port: 123
+  def initialize watch, host
     super watch
 
-    @ntp    = Net::NTP.new host, port: port
+    @ntp    = Net::NTP.new host
     @peers  = nil
     @update = update
   end
@@ -33,6 +30,12 @@ class Net::NTP::Watch::Peers < Net::NTP::Watch::Display
         addstr "\n"
       end
     end
+  end
+
+  def stop
+    @update.kill
+
+    super
   end
 
   def update
@@ -74,7 +77,7 @@ class Net::NTP::Watch::Peers < Net::NTP::Watch::Display
         case vars.hmode
         when 6 then "b"
         when 5 then
-          case vars.srcaddr
+          case vars.srcadr
           when MULTICAST_V4, MULTICAST_V6 then
             "M"
           else
@@ -82,7 +85,7 @@ class Net::NTP::Watch::Peers < Net::NTP::Watch::Display
           end
         when 3 then
           case vars.srcadr
-          when REFCLOCK then
+          when Net::NTP::Watch::REFCLOCK then
             "l"
           when UNSPEC then
             "p"
@@ -115,7 +118,7 @@ class Net::NTP::Watch::Peers < Net::NTP::Watch::Display
 
       poll = 1 << [vars.ppoll, vars.hpoll].min
 
-      "%c%16.16s %-16.16s %2d %c %4.4s %4d  %3o %7.3f %+8.3f %7.3f" % [
+      "%c%-16.16s %-16.16s %2d %c %4.4s %4d  %3o %7.3f %+8.3f %7.3f" % [
         tally,
         remote,
         refid,

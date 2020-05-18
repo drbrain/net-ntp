@@ -31,14 +31,18 @@ class Net::NTP::Watch::Message < Curses::Window
     Curses.flash
   end
 
+  def get_host
+    prompt "host"
+  end
+
   ##
   # Displays a prompt on the screen and returns the input given
 
-  def prompt
+  def prompt name
     clear
 
     attron Curses::A_BOLD do
-      addstr '> '
+      addstr "#{name}> "
     end
 
     Curses.echo

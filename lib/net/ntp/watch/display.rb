@@ -45,6 +45,12 @@ class Net::NTP::Watch::Display < Curses::Pad
     noutrefresh
   end
 
+  def stop
+    clear
+
+    refresh
+  end
+
   def screen_position
     @current_row = 0       if @current_row < 0
     @current_row = max_row if @current_row > max_row

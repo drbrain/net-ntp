@@ -75,6 +75,9 @@ class Net::NTP::Watch
       Resolv::DNS === resolver
     }
     dns.timeouts = 0.5
+
+    @host          = "localhost"
+    @display_class = Net::NTP::Watch::Peers
   end
 
   def init_style
@@ -87,11 +90,22 @@ class Net::NTP::Watch
     end
   end
 
+  def display
+    @display.stop if @display
+
+    @display = @display_class.new self, @host
+    @display.show
+  end
+
   def event_loop
     loop do
       Curses.doupdate
 
       case key = @message.getch
+      when "h"                                then
+        @host = @message.get_host
+        display
+
       when                Curses::Key::END    then @display.scroll_bottom
       when                Curses::Key::HOME   then @display.scroll_top
       when "j",           Curses::Key::DOWN   then @display.scroll_down
@@ -137,8 +151,7 @@ class Net::NTP::Watch
     Curses.curs_set 0 # invisible
 
     @message = Net::NTP::Watch::Message.new
-    @display = Net::NTP::Watch::Peers.new self, host: "localhost"
-    @display.show
+    display
 
     trap_resume do
       event_loop
