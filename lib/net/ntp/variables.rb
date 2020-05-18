@@ -130,6 +130,11 @@ class Net::NTP::Variables
   attr_reader :srcadr
 
   ##
+  # Source (remote) hostname
+
+  attr_reader :srchost
+
+  ##
   # Source (remote) port
 
   attr_reader :srcport
@@ -194,6 +199,8 @@ class Net::NTP::Variables
           }
         when "rec", "reftime" then
           ts_to_time value
+        when "srchost" then
+          value[1..-2]
         else
           value
         end
