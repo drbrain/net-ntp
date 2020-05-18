@@ -4,8 +4,10 @@ class Net::NTP::Watch::Message < Curses::Window
   # Creates a new Message instance that will sit at the bottom line of the
   # screen
 
-  def initialize
+  def initialize watch
     super 1, Curses.cols, Curses.lines - 1, 0
+
+    @watch = watch
 
     keypad true
   end
@@ -15,6 +17,15 @@ class Net::NTP::Watch::Message < Curses::Window
 
   def clear
     super
+
+    if name = @watch.display&.name then
+      setpos 0, maxx - name.size - @watch.host.size - 1
+      attron Curses::A_BOLD
+      addstr name
+      attroff Curses::A_BOLD
+      addstr " "
+      addstr @watch.host
+    end
 
     setpos 0, 0
 

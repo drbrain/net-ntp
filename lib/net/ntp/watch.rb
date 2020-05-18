@@ -61,6 +61,8 @@ class Net::NTP::Watch
     watch.run
   end
 
+  attr_reader :display
+  attr_reader :host
   attr_reader :message
   attr_reader :resolv
 
@@ -90,7 +92,7 @@ class Net::NTP::Watch
     end
   end
 
-  def display
+  def new_display
     @display.stop if @display
 
     @display = @display_class.new self, @host
@@ -104,7 +106,8 @@ class Net::NTP::Watch
       case key = @message.getch
       when "h"                                then
         @host = @message.get_host
-        display
+        new_display
+        @message.clear
 
       when                Curses::Key::END    then @display.scroll_bottom
       when                Curses::Key::HOME   then @display.scroll_top
@@ -150,12 +153,16 @@ class Net::NTP::Watch
     Curses.noecho
     Curses.curs_set 0 # invisible
 
-    @message = Net::NTP::Watch::Message.new
-    display
+    new_display
+    @message = Net::NTP::Watch::Message.new self
+    @message.clear
 
     trap_resume do
       event_loop
     end
+  rescue Interrupt
+  ensure
+    Curses.close_screen
   end
 
   def trap_resume

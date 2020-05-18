@@ -25,6 +25,11 @@ class Net::NTP::Watch::Display < Curses::Pad
     maxy - Curses.lines + 1
   end
 
+  def name
+    short_name = self.class.name.split('::').last
+    short_name.upcase
+  end
+
   def page_down
     @current_row += Curses.lines - 1
 
