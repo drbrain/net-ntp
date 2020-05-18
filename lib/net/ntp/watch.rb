@@ -98,6 +98,7 @@ class Net::NTP::Watch
     @display = @display_class.new self, @host
     @display.update
     @display.show
+    @message.clear
   end
 
   def event_loop
@@ -108,7 +109,13 @@ class Net::NTP::Watch
       when "h"                                then
         @host = @message.get_host
         new_display
-        @message.clear
+
+      when "p"                                then
+        @display_class = Net::NTP::Watch::Peers
+        new_display
+      when "s"                                then
+        @display_class = Net::NTP::Watch::Sysinfo
+        new_display
 
       when                Curses::Key::END    then @display.scroll_bottom
       when                Curses::Key::HOME   then @display.scroll_top
@@ -154,9 +161,8 @@ class Net::NTP::Watch
     Curses.noecho
     Curses.curs_set 0 # invisible
 
-    new_display
     @message = Net::NTP::Watch::Message.new self
-    @message.clear
+    new_display
 
     trap_resume do
       event_loop
@@ -184,3 +190,4 @@ end
 require "net/ntp/watch/display"
 require "net/ntp/watch/message"
 require "net/ntp/watch/peers"
+require "net/ntp/watch/sysinfo"
