@@ -130,6 +130,12 @@ class Net::NTP
         s = UDPSocket.new
         s.connect @host, @port
         s
+      rescue SocketError => e
+        if /getaddrinfo/ =~ e.message then
+          raise Net::NTP::UnknownHost, @host
+        else
+          raise
+        end
       end
   end
 

@@ -130,4 +130,19 @@ class TestNetNTP < Minitest::Test
     assert_equal "ntp",          e.port
     assert_equal 0,              e.timeout
   end
+
+  def test_socket_unknown_host
+    socket = Object.new
+    def socket.connect host, port
+      raise SocketError, "getaddrinfo"
+    end
+
+    UDPSocket.stub :new, socket do
+      e = assert_raises Net::NTP::UnknownHost do
+        @ntp.socket
+      end
+
+      assert_equal "Unknown host pool.ntp.org", e.message
+    end
+  end
 end

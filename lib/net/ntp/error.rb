@@ -36,6 +36,23 @@ class Net::NTP::Timeout < Net::NTP::Error
 end
 
 ##
+# Raised when a host name is not known
+
+class Net::NTP::UnknownHost < Net::NTP::Error
+  ##
+  # Unknown host name
+
+  attr_reader :host
+
+  ##
+  # Create a new UnknownHost error for +host+
+
+  def initialize host
+    super "Unknown host #{host}"
+  end
+end
+
+##
 # Raised when an packet with an unknown opcode is received
 
 class Net::NTP::UnknownOpcode < Net::NTP::Error
